@@ -3,8 +3,6 @@ using Server.DataContext;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var cStr = builder.Configuration.GetConnectionString("DbConnection");
-
 builder.Services.AddDbContext<SocialContext>(
     options => options.UseNpgsql(builder.Configuration.GetConnectionString("DbConnection"))
 );
