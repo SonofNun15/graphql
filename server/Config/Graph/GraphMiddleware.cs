@@ -1,31 +1,51 @@
-using System.Text.Json;
 using GraphQL;
-using GraphQL.SystemTextJson;
 using GraphQL.Types;
 using Microsoft.Extensions.Options;
+using Server.Config.Serialization;
 
 namespace Server.Config.Graph;
 
 public class GraphMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly IDocumentExecuter _executor;
+    private readonly IDocumentWriter _writer;
+
+    private readonly ISerializer _serializer;
     private readonly GraphOptions _options;
 
-    public GraphMiddleware(RequestDelegate next,  IOptions<GraphOptions> options)
+    public GraphMiddleware(
+        RequestDelegate next, 
+        IDocumentWriter writer, 
+        IDocumentExecuter executor, 
+        ISerializer serializer,
+        IOptions<GraphOptions> options)
     {
         _next = next;
+        _executor = executor;
+        _writer = writer;
+        _serializer = serializer;
         _options = options.Value;
     }
 
-    public Task InvokeAsync(HttpContext context, ISchema schema)
+    public async Task InvokeAsync(HttpContext context, ISchema schema)
     {
         if (IsGraphEndpoint(context.Request.Path) && IsGraphVerb(context.Request.Method))
         {
-            return HandleGraphRequest(context, schema);
+            var request = await GetGraphRequest(context.Request.Body);
+
+            if (request == null)
+            {
+                context.Response.StatusCode = 400;
+            }
+            else
+            {
+                await HandleGraphRequest(context, schema, request);
+            }
         }
         else
         {
-            return _next(context);
+            await _next(context);
         }
     }
 
@@ -41,26 +61,22 @@ public class GraphMiddleware
         );
     }
 
-    private async Task HandleGraphRequest(HttpContext context, ISchema schema)
+    private Task<GraphRequest?> GetGraphRequest(Stream requestBody)
     {
-        var request = await JsonSerializer.DeserializeAsync<GraphRequest>(
-            context.Request.Body,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            }
-        );
+        return _serializer.DeserializeAsync<GraphRequest>(requestBody);
+    }
 
-        var result = await schema.ExecuteAsync(options => 
+    private async Task HandleGraphRequest(HttpContext context, ISchema schema, GraphRequest graphRequest)
+    {
+        var result = await _executor.ExecuteAsync(options =>
         {
-            options.Query = request?.Query;
+            options.Query = graphRequest.Query;
+            options.Schema = schema;
         });
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = 200;
 
-        var writer = new StreamWriter(context.Response.Body);
-        await writer.WriteAsync(result);
-        await writer.FlushAsync();
+        await _writer.WriteAsync(context.Response.Body, result);
     }
 }
