@@ -2,13 +2,20 @@ using Server.Models;
 
 namespace Server.DataContext;
 
-public static class DataSeeding
+public class DataSeeding
 {
-    public static void Seed(SocialContext context)
-    {
-        context.Database.EnsureCreated();
+    private readonly SocialContext _context;
 
-        if (!context.People.Any())
+    public DataSeeding(SocialContext context)
+    {
+        _context = context;
+    }
+
+    public async Task Seed()
+    {
+        await _context.Database.EnsureCreatedAsync();
+
+        if (!_context.People.Any())
         {
             var john = new Person 
             { 
@@ -22,8 +29,8 @@ public static class DataSeeding
                 FirstName = "Jane",
                 LastName = "Doe",
             };
-            context.People.Add(john);
-            context.People.Add(jane);
+            _context.People.Add(john);
+            _context.People.Add(jane);
 
             var johnsPost = new Post
             {
@@ -32,7 +39,7 @@ public static class DataSeeding
                 Body = "Here's some cool info",
                 Author = john,
             };
-            context.Posts.Add(johnsPost);
+            _context.Posts.Add(johnsPost);
 
             var janesComment = new Comment
             {
@@ -40,8 +47,8 @@ public static class DataSeeding
                 Post = johnsPost,
                 Author = jane,
             };
-            context.Comments.Add(janesComment);
-            context.SaveChanges();
+            _context.Comments.Add(janesComment);
+            await _context.SaveChangesAsync();
         }
     }
 }

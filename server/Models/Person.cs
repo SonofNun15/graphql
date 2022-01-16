@@ -14,5 +14,5 @@ public class Person
     public string? Bio { get; set; }
 
     public IList<Post> Posts { get; set; } = new List<Post>();
-    public IList<Comment> Commands { get; set; } = new List<Comment>();
+    public IList<Comment> Comments { get; set; } = new List<Comment>();
 }
