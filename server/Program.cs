@@ -20,6 +20,8 @@ if (app.Environment.IsDevelopment())
         var dataSeeding = scope.ServiceProvider.GetRequiredService<DataSeeding>();
         await dataSeeding.Seed();
     }
+
+    app.UseGraphQLPlayground("/graphql/playground");
 }
 
 app.UseGraphQL();
