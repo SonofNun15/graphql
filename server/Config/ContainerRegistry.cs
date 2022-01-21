@@ -2,7 +2,6 @@ using GraphQL;
 using Server.Config.Serialization;
 using Server.DataContext;
 using Server.DataServices;
-using Server.Graph;
 
 namespace Server.Config;
 
