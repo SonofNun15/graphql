@@ -1,8 +1,7 @@
 using GraphQL;
-using GraphQL.SystemTextJson;
-using GraphQL.Types;
 using Server.Config.Serialization;
 using Server.DataContext;
+using Server.DataServices;
 using Server.Graph;
 
 namespace Server.Config;
@@ -17,15 +16,18 @@ public static class ContainerRegistry
 
     private static void ConfigureGeneral(IServiceCollection services)
     {
+        services.AddScoped<IServiceProvider>(
+            s => new FuncServiceProvider(s.GetRequiredService)
+        );
+
         services.AddSingleton<ISerializer, Json>();
         services.AddScoped<DataSeeding>();
     }
 
     private static void ConfigureGraph(IServiceCollection services)
     {
-        services.AddSingleton<IDocumentWriter, DocumentWriter>();
-        services.AddSingleton<IDocumentExecuter, DocumentExecuter>();
-        services.AddScoped<SocialQuery>();
-        services.AddScoped<ISchema, SocialSchema>();
+        services.AddScoped<PersonService>();
+        services.AddScoped<PostService>();
+        services.AddScoped<CommentService>();
     }
 }
