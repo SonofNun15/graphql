@@ -1,28 +1,42 @@
 using GraphQL.Types;
-using Server.DataContext;
+using Server.DataServices;
+using GraphQL.MicrosoftDI;
+using Server.Models;
 
 namespace Server.Graph;
 
 public class SocialQuery : ObjectGraphType
 {
-    public SocialQuery(SocialContext db)
+    public SocialQuery()
     {
-        Field<StringGraphType>(
-            name: "hello",
-            resolve: context => "world"
-        );
-        Field<StringGraphType>(
-            name: "howdy",
-            resolve: context => "universe"
-        ); 
-        // Field<PersonGraphType>(
-        //     "people",
-        //     resolve: context => db.People
-        // );
+        Field<PersonGraphType, Person>("person")
+            .Argument<NonNullGraphType<IdGraphType>>("id")
+            .Resolve()
+            .WithScope()
+            .WithService<PersonService>()
+            .Resolve((ctx, personService) => 
+            {
+                int id = (int) ctx.Arguments["id"].Value;
+                return personService.GetPersonById(id);
+            });
 
-        // Field<PostGraphType>(
-        //     "posts",
-        //     resolve: context => db.Posts
-        // );
+        Field<ListGraphType<PersonGraphType>, IEnumerable<Person>>("people")
+            .Resolve()
+            .WithScope()
+            .WithService<PersonService>()
+            .Resolve((ctx, personService) =>
+            {
+                return personService.All();
+            });
+
+        Field<PostGraphType, Post>("post")
+            .Argument<NonNullGraphType<IdGraphType>>("id")
+            .Resolve()
+            .WithScope()
+            .WithService<PostService>()
+            .Resolve((ctx, postService) => {
+                int id = (int) ctx.Arguments["id"].Value;
+                return postService.GetPostById(id);
+            });
     }
 }
